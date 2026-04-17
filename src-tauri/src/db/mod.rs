@@ -67,8 +67,7 @@ pub struct Db {
 impl Db {
     /// Открыть БД на диске. Если файла нет — создаётся. Миграции применяются сразу.
     pub fn open(path: impl AsRef<Path>) -> DbResult<Self> {
-        let manager = SqliteConnectionManager::file(path.as_ref())
-            .with_init(pragma_foreign_keys);
+        let manager = SqliteConnectionManager::file(path.as_ref()).with_init(pragma_foreign_keys);
         let pool = Pool::builder().max_size(8).build(manager)?;
         let db = Self {
             pool: Arc::new(pool),
@@ -83,8 +82,7 @@ impl Db {
     /// per-connection, используем shared cache + unique URI. Для простоты
     /// тестов фиксируем `max_size=1` — тесты коротко живут.
     pub fn in_memory() -> DbResult<Self> {
-        let manager = SqliteConnectionManager::memory()
-            .with_init(pragma_foreign_keys);
+        let manager = SqliteConnectionManager::memory().with_init(pragma_foreign_keys);
         let pool = Pool::builder().max_size(1).build(manager)?;
         let db = Self {
             pool: Arc::new(pool),
