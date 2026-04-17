@@ -54,6 +54,7 @@ chrono      = { version = "0.4", features = ["serde"] }
 # --- Stage 4: chain registry ---
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "socks"] }
 url     = "2.5"
+hex     = "0.4"
 
 # Dependencies для следующих этапов добавятся там же:
 # - transport:      tonic, prost (reqwest уже есть)
@@ -61,7 +62,6 @@ url     = "2.5"
 
 [dev-dependencies]
 tokio    = { version = "1", features = ["full", "test-util"] }
-hex      = "0.4"
 wiremock = "0.6"
 tempfile = "3"
 
