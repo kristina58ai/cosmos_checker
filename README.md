@@ -43,7 +43,7 @@ pnpm test             # React frontend
 Генерация проекта идёт поэтапно. План — [`docs/plan.md`](docs/plan.md).
 
 - [x] Этап 0 — Окружение и CI
-- [ ] Этап 1 — Скаффолд
+- [x] Этап 1 — Скаффолд
 - [ ] Этап 2 — Key Deriver
 - [ ] Этап 3 — SQLite
 - [ ] Этап 4 — Chain Registry

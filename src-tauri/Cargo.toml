@@ -1,0 +1,58 @@
+[package]
+name = "cosmos-checker"
+version = "0.1.0"
+description = "Mass Cosmos SDK wallet checker (desktop)"
+authors = ["Cosmos Checker contributors"]
+edition = "2021"
+rust-version = "1.80"
+default-run = "cosmos-checker"
+
+# Библиотека — чтобы integration-тесты могли переиспользовать код.
+[lib]
+name = "cosmos_checker"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "cosmos-checker"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+# prost-build / tonic-build добавятся в Этапе 5 (gRPC codegen).
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Async runtime — будет использоваться уже в следующих этапах,
+# но проще сразу подключить, чтобы lib компилировалась.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+
+# Dependencies для следующих этапов добавятся там же:
+# - crypto:         bip39, bip32, k256, ripemd, sha2, bech32, secrecy, zeroize
+# - db:             rusqlite (bundled), r2d2, r2d2_sqlite
+# - chain_registry: reqwest
+# - transport:      reqwest, tonic, prost
+# - checker:        tokio-util (CancellationToken), futures
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "test-util"] }
+
+[features]
+default = ["custom-protocol"]
+# Флаг, который Tauri ставит при `cargo tauri build`.
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
