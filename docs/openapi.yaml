@@ -1,0 +1,429 @@
+# Cosmos Checker — Internal API Contract (Tauri IPC Commands)
+# Это не HTTP API, а контракт между React frontend и Rust backend через Tauri invoke.
+# Формат OpenAPI используется для формальной документации.
+
+openapi: 3.1.0
+info:
+  title: Cosmos Checker — Tauri IPC API
+  version: 1.0.0
+  description: |
+    Внутренний контракт между GUI (React) и ядром (Rust) через Tauri IPC.
+    Каждый path соответствует Tauri command, вызываемому через `invoke("command_name", args)`.
+
+paths:
+
+  # ============================================================
+  # Chain Registry
+  # ============================================================
+
+  /get_chains:
+    post:
+      operationId: get_chains
+      summary: Получить список всех Cosmos-сетей
+      description: Возвращает список сетей из Chain Registry (из кеша или с GitHub)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force_refresh:
+                  type: boolean
+                  default: false
+                  description: Принудительно обновить кеш из GitHub
+      responses:
+        '200':
+          description: Список сетей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChainInfo'
+
+  /get_chain_details:
+    post:
+      operationId: get_chain_details
+      summary: Детали конкретной сети
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chain_id]
+              properties:
+                chain_id:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChainInfo'
+
+  # ============================================================
+  # Wallet Import
+  # ============================================================
+
+  /import_wallets:
+    post:
+      operationId: import_wallets
+      summary: Импорт кошельков из txt-файла
+      description: |
+        Парсит txt-файл и определяет тип каждой строки:
+        - bech32 адрес
+        - seed-фраза (12/24 слова)
+        - приватный ключ (64 hex символа)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_path]
+              properties:
+                file_path:
+                  type: string
+                  description: Путь к txt-файлу с кошельками
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+
+  # ============================================================
+  # Proxy Import
+  # ============================================================
+
+  /import_proxies:
+    post:
+      operationId: import_proxies
+      summary: Импорт прокси из txt-файла
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_path]
+              properties:
+                file_path:
+                  type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxyImportResult'
+
+  # ============================================================
+  # Check Execution
+  # ============================================================
+
+  /start_check:
+    post:
+      operationId: start_check
+      summary: Запустить проверку кошельков
+      description: |
+        Запускает async pipeline: деривация адресов → параллельные запросы
+        к выбранным сетям → агрегация результатов.
+        Прогресс передаётся через Tauri events.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chain_ids]
+              properties:
+                chain_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Список chain_id для проверки
+                max_concurrency:
+                  type: integer
+                  default: 100
+                  description: Макс. параллельных соединений
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: integer
+
+  /stop_check:
+    post:
+      operationId: stop_check
+      summary: Остановить текущую проверку
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id]
+              properties:
+                session_id:
+                  type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [cancelled]
+
+  # ============================================================
+  # Results
+  # ============================================================
+
+  /get_results:
+    post:
+      operationId: get_results
+      summary: Получить результаты проверки
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id]
+              properties:
+                session_id:
+                  type: integer
+                filter:
+                  type: string
+                  enum: [all, with_funds, empty, errors]
+                  default: all
+                page:
+                  type: integer
+                  default: 0
+                page_size:
+                  type: integer
+                  default: 100
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultsPage'
+
+  /export_results:
+    post:
+      operationId: export_results
+      summary: Экспорт результатов в txt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, file_path]
+              properties:
+                session_id:
+                  type: integer
+                file_path:
+                  type: string
+                filter:
+                  type: string
+                  enum: [all, with_funds, empty]
+                  default: all
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exported_count:
+                    type: integer
+                  file_path:
+                    type: string
+
+  # ============================================================
+  # Settings
+  # ============================================================
+
+  /get_settings:
+    post:
+      operationId: get_settings
+      summary: Получить текущие настройки
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSettings'
+
+  /update_settings:
+    post:
+      operationId: update_settings
+      summary: Обновить настройки
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppSettings'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+# ============================================================
+# Tauri Events (backend → frontend)
+# ============================================================
+# Эти события пушатся из Rust через app.emit():
+#
+# "check:progress"  → { checked: u32, total: u32, speed: f32, current_address: String }
+# "check:result"    → { wallet_result: WalletResult }
+# "check:error"     → { address: String, chain_id: String, error: String }
+# "check:completed" → { session_id: u32, total: u32, with_funds: u32, duration_sec: f32 }
+
+components:
+  schemas:
+
+    ChainInfo:
+      type: object
+      required: [chain_id, chain_name, bech32_prefix, slip44]
+      properties:
+        chain_id:
+          type: string
+          example: "cosmoshub-4"
+        chain_name:
+          type: string
+          example: "cosmoshub"
+        display_name:
+          type: string
+          example: "Cosmos Hub"
+        bech32_prefix:
+          type: string
+          example: "cosmos"
+        slip44:
+          type: integer
+          example: 118
+        logo_url:
+          type: string
+        endpoints_count:
+          type: object
+          properties:
+            grpc:
+              type: integer
+            rest:
+              type: integer
+            rpc:
+              type: integer
+
+    ImportResult:
+      type: object
+      properties:
+        total:
+          type: integer
+        addresses:
+          type: integer
+        seeds:
+          type: integer
+        private_keys:
+          type: integer
+        invalid:
+          type: integer
+        invalid_lines:
+          type: array
+          items:
+            type: object
+            properties:
+              line_number:
+                type: integer
+              content:
+                type: string
+
+    ProxyImportResult:
+      type: object
+      properties:
+        total:
+          type: integer
+        valid:
+          type: integer
+        invalid:
+          type: integer
+        types:
+          type: object
+          properties:
+            http:
+              type: integer
+            socks5:
+              type: integer
+
+    WalletResult:
+      type: object
+      properties:
+        address:
+          type: string
+        chain_id:
+          type: string
+        input_type:
+          type: string
+          enum: [address, seed, private_key]
+        balance_display:
+          type: string
+          example: "1.5 ATOM"
+        staked_display:
+          type: string
+          example: "10.0 ATOM"
+        rewards_display:
+          type: string
+          example: "0.3 ATOM"
+        unbonding_display:
+          type: string
+          example: "0.0 ATOM"
+        has_funds:
+          type: boolean
+        error:
+          type: string
+          nullable: true
+
+    ResultsPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletResult'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        with_funds_count:
+          type: integer
+        empty_count:
+          type: integer
+        error_count:
+          type: integer
+
+    AppSettings:
+      type: object
+      properties:
+        max_concurrency:
+          type: integer
+          default: 100
+        request_timeout_ms:
+          type: integer
+          default: 5000
+        fallback_enabled:
+          type: boolean
+          default: true
+        chain_registry_cache_hours:
+          type: integer
+          default: 24
+        proxy_rotation:
+          type: string
+          enum: [round_robin, random]
+          default: round_robin

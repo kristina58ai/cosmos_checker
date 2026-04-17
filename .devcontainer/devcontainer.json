@@ -1,0 +1,36 @@
+{
+  "name": "cosmos-checker",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tauri-apps.tauri-vscode",
+        "tamasfe.even-better-toml",
+        "serayuzgur.crates",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "vadimcn.vscode-lldb"
+      ],
+      "settings": {
+        "rust-analyzer.check.command": "clippy",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "postCreateCommand": "cargo install tauri-cli --version '^2.0' --locked && npm install -g pnpm && pnpm install || true",
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=cosmos-checker-cargo-cache,target=/usr/local/cargo/registry,type=volume",
+    "source=cosmos-checker-pnpm-store,target=/home/vscode/.local/share/pnpm/store,type=volume"
+  ]
+}

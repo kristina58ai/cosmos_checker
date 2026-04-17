@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  lint-and-test-linux:
+    name: Lint + Test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps (Tauri + protoc)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev protobuf-compiler libprotobuf-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: pnpm install (skip if no package.json yet)
+        run: |
+          if [ -f package.json ]; then pnpm install --frozen-lockfile=false; fi
+
+      - name: cargo fmt
+        if: hashFiles('src-tauri/Cargo.toml') != ''
+        working-directory: src-tauri
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        if: hashFiles('src-tauri/Cargo.toml') != ''
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: cargo test
+        if: hashFiles('src-tauri/Cargo.toml') != ''
+        working-directory: src-tauri
+        run: cargo test --all-features
+
+      - name: Frontend lint
+        if: hashFiles('package.json') != ''
+        run: pnpm run lint --if-present
+
+      - name: Frontend test
+        if: hashFiles('package.json') != ''
+        run: pnpm test --if-present
+
+  build-windows:
+    name: Build Windows (.msi)
+    runs-on: windows-latest
+    needs: lint-and-test-linux
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0" --locked
+
+      - name: pnpm install
+        if: hashFiles('package.json') != ''
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build bundle
+        if: hashFiles('src-tauri/tauri.conf.json') != ''
+        run: cargo tauri build
+
+      - name: Upload artifacts
+        if: hashFiles('src-tauri/target/release/bundle/**/*.msi') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: cosmos-checker-windows
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
