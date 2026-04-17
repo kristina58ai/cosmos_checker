@@ -1,5 +1,7 @@
 [toolchain]
-channel = "1.80.0"
+# 1.85 — минимум для edition2024 (требуется новыми транзитивными зависимостями,
+# например toml_parser ≥ 1.1). Бампать выше — по необходимости.
+channel = "1.89.0"
 components = ["rustfmt", "clippy"]
 targets = ["x86_64-pc-windows-msvc"]
 profile = "minimal"

@@ -1,3 +1,8 @@
-//! Security primitives (Secret<T>, redaction helpers).
+//! Security primitives.
 //!
-//! Наполняется в Этапе 2 (вместе с crypto).
+//! Публичные типы: `SecretString`, `SecretBytes`.
+//! Используются всеми модулями, работающими с seed-фразами и приватными ключами.
+
+pub mod secret;
+
+pub use secret::{secret_bytes, secret_string, SecretBytes, SecretString};

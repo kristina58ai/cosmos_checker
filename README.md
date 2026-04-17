@@ -44,7 +44,7 @@ pnpm test             # React frontend
 
 - [x] Этап 0 — Окружение и CI
 - [x] Этап 1 — Скаффолд
-- [ ] Этап 2 — Key Deriver
+- [x] Этап 2 — Key Deriver
 - [ ] Этап 3 — SQLite
 - [ ] Этап 4 — Chain Registry
 - [ ] Этап 5 — Transport (REST + gRPC)
