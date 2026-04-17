@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS chain_endpoints (
     UNIQUE(chain_id, endpoint_type, address)
 );
 
-CREATE INDEX idx_endpoints_chain ON chain_endpoints(chain_id, endpoint_type);
+CREATE INDEX IF NOT EXISTS idx_endpoints_chain ON chain_endpoints(chain_id, endpoint_type);
 
 CREATE TABLE IF NOT EXISTS chain_tokens (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,9 +82,9 @@ CREATE TABLE IF NOT EXISTS wallet_results (
     checked_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_results_session ON wallet_results(session_id);
-CREATE INDEX idx_results_address ON wallet_results(address);
-CREATE INDEX idx_results_has_funds ON wallet_results(session_id, has_funds);
+CREATE INDEX IF NOT EXISTS idx_results_session ON wallet_results(session_id);
+CREATE INDEX IF NOT EXISTS idx_results_address ON wallet_results(address);
+CREATE INDEX IF NOT EXISTS idx_results_has_funds ON wallet_results(session_id, has_funds);
 
 -- ============================================================
 -- 4. Настройки приложения

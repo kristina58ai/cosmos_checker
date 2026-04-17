@@ -45,8 +45,13 @@ bech32  = "0.11"
 secrecy = { version = "0.10", features = ["serde"] }
 zeroize = { version = "1.8",  features = ["derive", "alloc"] }
 
+# --- Stage 3: SQLite layer ---
+rusqlite    = { version = "0.32", features = ["bundled", "chrono", "serde_json"] }
+r2d2        = "0.8"
+r2d2_sqlite = "0.25"
+chrono      = { version = "0.4", features = ["serde"] }
+
 # Dependencies для следующих этапов добавятся там же:
-# - db:             rusqlite (bundled), r2d2, r2d2_sqlite
 # - chain_registry: reqwest
 # - transport:      reqwest, tonic, prost
 # - checker:        tokio-util (CancellationToken), futures
