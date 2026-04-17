@@ -52,7 +52,7 @@ r2d2_sqlite = "0.25"
 chrono      = { version = "0.4", features = ["serde"] }
 
 # --- Stage 4: chain registry ---
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "socks"] }
 url     = "2.5"
 
 # Dependencies для следующих этапов добавятся там же:
@@ -63,6 +63,7 @@ url     = "2.5"
 tokio    = { version = "1", features = ["full", "test-util"] }
 hex      = "0.4"
 wiremock = "0.6"
+tempfile = "3"
 
 [features]
 default = ["custom-protocol"]
