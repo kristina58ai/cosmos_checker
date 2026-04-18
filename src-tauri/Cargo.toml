@@ -34,6 +34,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Async runtime — будет использоваться уже в следующих этапах,
 # но проще сразу подключить, чтобы lib компилировалась.
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+tokio-util = { version = "0.7", features = ["rt"] }
 
 # --- Stage 2: crypto / security ---
 bip39   = { version = "2.1",  default-features = false, features = ["std"] }
